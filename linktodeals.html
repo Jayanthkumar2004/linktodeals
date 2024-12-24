@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Link to Deals</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 1rem 0;
+            text-align: center;
+        }
+        main {
+            padding: 1rem;
+            max-width: 1200px;
+            margin: 2rem auto;
+        }
+        .deals-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        .deal-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 1rem;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .deal-card:hover {
+            transform: scale(1.05);
+        }
+        .deal-card img {
+            width: 100%;
+            height: auto;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 5px;
+        }
+        .deal-card h3 {
+            margin: 0.5rem 0;
+            font-size: 1.2rem;
+        }
+        .deal-card p {
+            margin: 0.5rem 0;
+            color: #555;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #0056b3;
+        }
+        footer {
+            background-color: #222;
+            color: white;
+            text-align: center;
+            padding: 0.5rem 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            font-size: 0.8rem;
+        }
+        .upload-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .upload-section input, .upload-section textarea {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            font-size: 1rem;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Link to Deals</h1>
+        <p>Your gateway to the best deals and offers!</p>
+    </header>
+    <main>
+        <section>
+            <h2>Add Your Deals</h2>
+            <div class="upload-section">
+                <form id="dealForm">
+                    <label for="dealTitle">Deal Title:</label><br>
+                    <input type="text" id="dealTitle" name="dealTitle" placeholder="Enter deal title" required><br>
+
+                    <label for="dealImage">Upload Image:</label><br>
+                    <input type="file" id="dealImage" name="dealImage" accept="image/*" required><br>
+
+                    <label for="dealDescription">Description:</label><br>
+                    <textarea id="dealDescription" name="dealDescription" placeholder="Enter deal description" rows="4" required></textarea><br>
+
+                    <label for="dealLink">Deal Link:</label><br>
+                    <input type="url" id="dealLink" name="dealLink" placeholder="Enter deal link" required><br>
+
+                    <button type="button" id="addDealButton">Add Deal</button>
+                </form>
+            </div>
+        </section>
+
+        <section>
+            <h2>Latest Deals</h2>
+            <div class="deals-container" id="dealsContainer">
+                <!-- Deals will be dynamically added here -->
+            </div>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 Link to Deals. All rights reserved.</p>
+    </footer>
+
+    <script>
+        async function fetchDeals() {
+            const response = await fetch('http://localhost:3000/deals');
+            const deals = await response.json();
+
+            const container = document.getElementById('dealsContainer');
+            container.innerHTML = '';
+
+            deals.forEach(deal => {
+                const dealCard = document.createElement('div');
+                dealCard.className = 'deal-card';
+
+                const img = document.createElement('img');
+                img.src = deal.imageUrl;
+                img.alt = deal.title;
+
+                const dealTitle = document.createElement('h3');
+                dealTitle.textContent = deal.title;
+
+                const dealDescription = document.createElement('p');
+                dealDescription.textContent = deal.description;
+
+                const shopButton = document.createElement('a');
+                shopButton.href = deal.dealLink;
+                shopButton.className = 'cta-button';
+                shopButton.textContent = 'Shop Now';
+                shopButton.target = '_blank';
+
+                dealCard.appendChild(img);
+                dealCard.appendChild(dealTitle);
+                dealCard.appendChild(dealDescription);
+                dealCard.appendChild(shopButton);
+
+                container.appendChild(dealCard);
+            });
+        }
+
+        document.getElementById('addDealButton').addEventListener('click', async function () {
+            const title = document.getElementById('dealTitle').value;
+            const description = document.getElementById('dealDescription').value;
+            const imageInput = document.getElementById('dealImage');
+            const dealLink = document.getElementById('dealLink').value;
+
+            if (title && description && imageInput.files.length > 0 && dealLink) {
+                const reader = new FileReader();
+
+                reader.onload = async function (e) {
+                    const newDeal = {
+                        title: title,
+                        description: description,
+                        imageUrl: e.target.result,
+                        dealLink: dealLink,
+                    };
+
+                    await fetch('http://localhost:3000/deals', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(newDeal),
+                    });
+
+                    fetchDeals();
+                };
+
+                reader.readAsDataURL(imageInput.files[0]);
+
+                // Reset form
+                document.getElementById('dealForm').reset();
+            } else {
+                alert('Please fill out all fields and upload an image.');
+            }
+        });
+
+        // Fetch deals on page load
+        fetchDeals();
+    </script>
+</body>
+</html>    add database to this code
